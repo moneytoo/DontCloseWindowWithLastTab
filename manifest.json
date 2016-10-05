@@ -1,0 +1,16 @@
+﻿{
+	"name": "Don't Close Window With Last Tab",
+	"version": "0.9",
+	"description": "Prevent closing of Google Chrome with the last tab, the least intrusive way.",
+	"manifest_version": 2,
+	"permissions": [
+		"tabs",
+		"storage"
+	],
+	"icons": {
+		"128": "icon128.png"
+	},
+	"background": {
+		"page": "background.html"
+	}
+}
