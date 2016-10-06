@@ -3,6 +3,9 @@
 var creatingPinnedTab = false;
 var creatingTab = false;
 var removingPinnedTab = false;
+var removingTab = false;
+
+var single_new_tab = false;
 
 function handleEvent() {
 	chrome.windows.getAll({populate: true, windowTypes: ["normal"]}, function(windows){
@@ -50,13 +53,33 @@ function handleEvent() {
 						});
 					}
 
+					// prevent blank new tab page(s) before actual tabs with loaded pages (allow single new tab page)
+					if (single_new_tab && window.tabs.length > 1 && windowNewTabs.length > 0 && windowNewTabs.length > windowPinnedNewTabs.length)
+						for (var tab = window.tabs.length - 2; tab >= 0 ; tab--) {
+							for (var newTab = 0; newTab < windowNewTabs.length; newTab++) {
+								if (window.tabs[tab].id == windowNewTabs[newTab].id && !removingTab) {
+									removingTab = true;
+									//console.log(windowNewTabs[newTab].id);
+									chrome.tabs.remove(windowNewTabs[newTab].id, function(t) {
+										removingTab = false;
+									});
+								}
+							}
+						}
+
 				}.bind(null, window, windowNumber, windowNewTabs));
 			}.bind(null, window, windowNumber));
 		}
 	});
 }
 
-handleEvent();
+function init() {
+	single_new_tab = localStorage['single_new_tab'];
+
+	handleEvent();
+}
+
+init();
 //chrome.tabs.onCreated.addListener(handleEvent);
 chrome.tabs.onUpdated.addListener(handleEvent);
 chrome.tabs.onAttached.addListener(handleEvent);
