@@ -1,11 +1,11 @@
-﻿var newTabUrl = "chrome://newtab/";
+var newTabUrl = "chrome://newtab/";
 
 var creatingPinnedTab = false;
 var creatingTab = false;
 var removingPinnedTab = false;
 var removingTab = false;
 
-var single_new_tab = '0';
+var single_new_tab = false;
 
 function handleEvent() {
 	chrome.windows.getAll({populate: true, windowTypes: ["normal"]}, function(windows){
@@ -57,7 +57,7 @@ function handleEvent() {
 					}
 
 					// prevent blank new tab page(s) before actual tabs with loaded pages (allow single new tab page)
-					if (single_new_tab == '1' && windowNewTabs.length > 1 && windowPinnedNewTabs.length == 0 && !removingTab) {
+					if (single_new_tab && windowNewTabs.length > 1 && windowPinnedNewTabs.length == 0 && !removingTab) {
 						removingTab = true;
 						//console.log("removing tab");
 						chrome.tabs.remove(windowNewTabs[0].id, function(tab) {
@@ -71,7 +71,23 @@ function handleEvent() {
 }
 
 function init() {
-	single_new_tab = localStorage['single_new_tab'];
+	//console.log("init");
+
+	chrome.storage.sync.get({
+		single_new_tab: false
+	}, function(items) {
+		single_new_tab = items.single_new_tab;
+	});
+
+	chrome.storage.onChanged.addListener(function(changes, namespace) {
+		for (key in changes) {
+			var storageChange = changes[key];
+			if (key == "single_new_tab") {
+				//console.log("changed");
+				single_new_tab = storageChange.newValue;
+			}
+		}
+    });
 
 	handleEvent();
 }

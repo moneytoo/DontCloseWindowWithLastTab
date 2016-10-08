@@ -1,19 +1,23 @@
-function save() {
-  var f = document.forms['options'];
-  localStorage['single_new_tab'] = (f.single_new_tab.checked) ? '1' : '0';
-  return false;
+// Saves options to chrome.storage.sync.
+function save_options() {
+  var single_new_tab = document.getElementById('single_new_tab').checked;
+  chrome.storage.sync.set({
+    single_new_tab: single_new_tab
+  }, function() {
+    var status = document.getElementById('status');
+    status.textContent = 'Options saved.';
+    setTimeout(function() {
+      status.textContent = '';
+    }, 750);
+  });
 }
 
-function init() {
-  var f = document.forms['options'];
-
-  if (localStorage['single_new_tab'])
-    f.single_new_tab.checked = localStorage['single_new_tab'] == '1';
-  else
-    f.single_new_tab.checked = false;
+function restore_options() {
+  chrome.storage.sync.get({
+    single_new_tab: false
+  }, function(items) {
+    document.getElementById('single_new_tab').checked = items.single_new_tab;
+  });
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('options').addEventListener('submit', save);
-  init();
-});
+document.addEventListener('DOMContentLoaded', restore_options);
+document.getElementById('save').addEventListener('click', save_options);
