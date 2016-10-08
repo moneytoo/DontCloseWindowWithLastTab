@@ -17,6 +17,7 @@ function handleEvent() {
 					// create the single pinned tab if there's none
 					if (windows.length == 1 && window.tabs.length < 2 && windowPinnedNewTabs.length < 1 && !creatingPinnedTab) {
 						creatingPinnedTab = true;
+						//console.log("creating pinned tab");
 						chrome.tabs.create({"index": 0, "pinned": true, "active": false, "url": newTabUrl}, function(tab) {
 							creatingPinnedTab = false;
 						});
@@ -25,15 +26,16 @@ function handleEvent() {
 					// open new tab if there's only single pinned tab
 					if (windows.length == 1 && window.tabs.length == 1 && windowPinnedNewTabs.length == 1 && !creatingTab) {
 						creatingTab = true;
+						//console.log("creating tab");
 						chrome.tabs.create({"url": newTabUrl}, function(tab) {
 							creatingTab = false;
-							console.log("new tab created");
 						});
 					}
 
 					// remove pinned tab if there's enough open tabs
 					if (windows.length == 1 && window.tabs.length > 2 && windowPinnedNewTabs.length < window.tabs.length && windowPinnedNewTabs.length >= 1 && !removingPinnedTab) {
 						removingPinnedTab = true;
+						//console.log("removing pinned tab 1");
 						chrome.tabs.remove(windowPinnedNewTabs[0].id, function(tab) {
 							removingPinnedTab = false;
 						});
@@ -48,25 +50,20 @@ function handleEvent() {
 					// remove pinned tab if 1st window has at least one regular page and new window is openning (ctrl+n)
 					if (windows.length == 2 && window.tabs.length == 2 && windowPinnedNewTabs.length == 1 && !removingPinnedTab) {
 						removingPinnedTab = true;
+						//console.log("removing pinned tab 2");
 						chrome.tabs.remove(windowPinnedNewTabs[0].id, function(tab) {
 							removingPinnedTab = false;
 						});
 					}
 
 					// prevent blank new tab page(s) before actual tabs with loaded pages (allow single new tab page)
-					if (single_new_tab == '1' && window.tabs.length > 1 && windowNewTabs.length > 0 && windowNewTabs.length > windowPinnedNewTabs.length)
-						for (var tab = window.tabs.length - 2; tab >= 0 ; tab--) {
-							for (var newTab = 0; newTab < windowNewTabs.length; newTab++) {
-								if (window.tabs[tab].id == windowNewTabs[newTab].id && !removingTab) {
-									removingTab = true;
-									//console.log(windowNewTabs[newTab].id);
-									chrome.tabs.remove(windowNewTabs[newTab].id, function(t) {
-										removingTab = false;
-									});
-								}
-							}
-						}
-
+					if (single_new_tab == '1' && windowNewTabs.length > 1 && windowPinnedNewTabs.length == 0 && !removingTab) {
+						removingTab = true;
+						//console.log("removing tab");
+						chrome.tabs.remove(windowNewTabs[0].id, function(tab) {
+							removingTab = false;
+						});
+					}
 				}.bind(null, window, windowNumber, windowNewTabs));
 			}.bind(null, window, windowNumber));
 		}
@@ -74,7 +71,7 @@ function handleEvent() {
 }
 
 function init() {
-	//single_new_tab = localStorage['single_new_tab'];
+	single_new_tab = localStorage['single_new_tab'];
 
 	handleEvent();
 }
