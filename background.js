@@ -12,10 +12,24 @@ function handleEvent() {
 		for (var windowNumber = 0; windowNumber < windows.length; windowNumber++) {
 			var window = windows[windowNumber];
 			chrome.tabs.query({"windowId": window.id, "url": newTabUrl}, function(window, windowNumber, windowNewTabs) {
-				chrome.tabs.query({"windowId": window.id, "pinned": true, "url": newTabUrl}, function(window, windowNumber, windowNewTabs, windowPinnedNewTabs) {
+				//chrome.tabs.query({"windowId": window.id, "pinned": true, "url": newTabUrl}, function(window, windowNumber, windowNewTabs, windowPinnedNewTabs) {
+				chrome.tabs.query({"windowId": window.id, "pinned": true}, function(window, windowNumber, windowNewTabs, windowPinnedTabs) {
+
+					if (window.tabs.length == 2) {
+						chrome.tabs.get(window.tabs[0].id, function(window, windowNumber, windowNewTabs, windowPinnedTabs, windowFirstTab) {
+
+							// prevent activating first pinned tab
+							if (window.tabs.length == 2 && windowFirstTab.active && windowFirstTab.pinned && !working) {
+								working = true;
+								chrome.tabs.update(window.tabs[1].id, {"active": true}, function(tab) {
+									working = false;
+								});
+							}
+						}.bind(null, window, windowNumber, windowNewTabs, windowPinnedTabs));
+					}
 
 					// create the single pinned tab if there's none
-					if ((every_window || windows.length == 1) && window.tabs.length < 2 && windowPinnedNewTabs.length < 1 && !working) {
+					if ((every_window || windows.length == 1) && window.tabs.length < 2 && windowPinnedTabs.length < 1 && !working) {
 						working = true;
 						if (debug) console.log("creating pinned tab");
 						chrome.tabs.create({"windowId": window.id, "index": 0, "pinned": true, "active": false, "url": newTabUrl}, function(tab) {
@@ -24,7 +38,7 @@ function handleEvent() {
 					}
 
 					// open new tab if there's only single pinned tab
-					if ((every_window || windows.length == 1) && window.tabs.length == 1 && windowPinnedNewTabs.length == 1 && !working) {
+					if ((every_window || windows.length == 1) && window.tabs.length == 1 && windowPinnedTabs.length == 1 && !working) {
 						working = true;
 						if (debug) console.log("creating tab");
 						chrome.tabs.create({"windowId": window.id, "url": newTabUrl}, function(tab) {
@@ -33,34 +47,34 @@ function handleEvent() {
 					}
 
 					// remove pinned tab if there's enough open tabs
-					if ((every_window || windows.length == 1) && window.tabs.length > 2 && windowPinnedNewTabs.length < window.tabs.length && windowPinnedNewTabs.length >= 1 && !working) {
+					if ((every_window || windows.length == 1) && window.tabs.length > 2 && windowPinnedTabs.length < window.tabs.length && windowPinnedTabs.length >= 1 && !working) {
 						working = true;
 						if (debug) console.log("removing pinned tab 1");
-						chrome.tabs.remove(windowPinnedNewTabs[0].id, function(tab) {
+						chrome.tabs.remove(windowPinnedTabs[0].id, function(tab) {
 							working = false;
 						});
 					}
 
 					// unpin single pinned tab if there's another window
-					if (!every_window && windows.length > 1 && window.tabs.length == 1 && windowPinnedNewTabs.length == 1 && !working) {
+					if (!every_window && windows.length > 1 && window.tabs.length == 1 && windowPinnedTabs.length == 1 && !working) {
 						working = true;
 						if (debug) console.log("unpin pinned tab");
-						chrome.tabs.update(windowPinnedNewTabs[0].id, {"pinned": false}, function(tab) {
+						chrome.tabs.update(windowPinnedTabs[0].id, {"pinned": false}, function(tab) {
 							working = false;
 						});
 					}
 
 					// remove pinned tab if 1st window has at least one regular page and new window is openning (ctrl+n)
-					if (!every_window && windows.length > 1 && window.tabs.length == 2 && windowPinnedNewTabs.length == 1 && !working) {
+					if (!every_window && windows.length > 1 && window.tabs.length == 2 && windowPinnedTabs.length == 1 && !working) {
 						working = true;
 						if (debug) console.log("removing pinned tab 2");
-						chrome.tabs.remove(windowPinnedNewTabs[0].id, function(tab) {
+						chrome.tabs.remove(windowPinnedTabs[0].id, function(tab) {
 							working = false;
 						});
 					}
 
 					// prevent blank new tab page(s) before actual tabs with loaded pages (allow single new tab page)
-					if (single_new_tab && windowNewTabs.length > 1 && windowPinnedNewTabs.length == 0 && !working) {
+					if (single_new_tab && windowNewTabs.length > 1 && windowPinnedTabs.length == 0 && !working) {
 						working = true;
 						if (debug) console.log("removing tab");
 						chrome.tabs.remove(windowNewTabs[0].id, function(tab) {
@@ -101,6 +115,6 @@ init();
 //chrome.tabs.onCreated.addListener(handleEvent);
 chrome.tabs.onUpdated.addListener(handleEvent);
 chrome.tabs.onAttached.addListener(handleEvent);
-//chrome.tabs.onActivated.addListener(handleEvent);
+chrome.tabs.onActivated.addListener(handleEvent);
 chrome.tabs.onRemoved.addListener(handleEvent);
 chrome.windows.onRemoved.addListener(handleEvent);
