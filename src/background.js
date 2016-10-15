@@ -4,10 +4,13 @@ var working = false;
 
 var single_new_tab = false;
 var every_window = false;
+var new_tab_last = false;
 
 var debug = false;
 
 function handleEvent() {
+	if (debug) console.log("handleEvent");
+
 	chrome.windows.getAll({populate: true, windowTypes: ["normal"]}, function(windows){
 		for (var windowNumber = 0; windowNumber < windows.length; windowNumber++) {
 			var window = windows[windowNumber];
@@ -73,7 +76,7 @@ function handleEvent() {
 						});
 					}
 
-					// prevent blank new tab page(s) before actual tabs with loaded pages (allow single new tab page)
+					// allow single new tab page
 					if (single_new_tab && windowNewTabs.length > 1 && windowPinnedTabs.length == 0 && !working) {
 						working = true;
 						if (debug) console.log("removing tab");
@@ -81,6 +84,18 @@ function handleEvent() {
 							working = false;
 						});
 					}
+
+					if (debug) console.log(new_tab_last);
+
+					// prevent blank new tab page(s) before actual tabs with loaded pages 
+					if (new_tab_last && windowPinnedTabs.length == 0 && windowNewTabs.length >= 1 && window.tabs[window.tabs.length-1].id != windowNewTabs[0].id && !working) {
+						working = true;
+						if (debug) console.log("removing tab 2");
+						chrome.tabs.remove(windowNewTabs[0].id, function(tab) {
+							working = false;
+						});
+					}
+
 				}.bind(null, window, windowNumber, windowNewTabs));
 			}.bind(null, window, windowNumber));
 		}
@@ -90,10 +105,12 @@ function handleEvent() {
 function init() {
 	chrome.storage.sync.get({
 		single_new_tab: false,
-		every_window: false
+		every_window: false,
+		new_tab_last: false
 	}, function(items) {
 		single_new_tab = items.single_new_tab;
 		every_window = items.every_window;
+		new_tab_last = items.new_tab_last;
 	});
 
 	chrome.storage.onChanged.addListener(function(changes, namespace) {
@@ -104,6 +121,8 @@ function init() {
 				single_new_tab = storageChange.newValue;
 			else if (key == "every_window")
 				every_window = storageChange.newValue;
+			else if (key == "new_tab_last")
+				new_tab_last = storageChange.newValue;
 		}
 		handleEvent();
 	});
@@ -117,4 +136,5 @@ chrome.tabs.onUpdated.addListener(handleEvent);
 chrome.tabs.onAttached.addListener(handleEvent);
 chrome.tabs.onActivated.addListener(handleEvent);
 chrome.tabs.onRemoved.addListener(handleEvent);
+chrome.tabs.onMoved.addListener(handleEvent);
 chrome.windows.onRemoved.addListener(handleEvent);
