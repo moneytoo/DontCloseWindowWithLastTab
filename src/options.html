@@ -4,7 +4,8 @@
   <title>Don't Close Window With Last Tab</title>
   <style>
     body { padding: 5px; }
-    label { display: block; padding-bottom: 15px; }
+    label { display: block; padding-bottom: 5px; padding-top: 5px; }
+    #status { padding-bottom: 7px; padding-top: 7px; }
   </style>
 </head>
 
@@ -19,9 +20,19 @@
     Allow "New Tab" page only as a last tab in a window
   </label>
 
+  <div style="height: 10px;"></div>
+  
   <label>
-    <input type="checkbox" id="every_window">
-    Prevent closing of every window
+  <input type="radio" name="prevent_closing" id="any_window" value="any_window">
+    Prevent closing of any last window (most subtle)
+  </label>
+  <label>
+    <input type="radio" name="prevent_closing" id="first_window" value="first_window">
+    Prevent closing of first opened window
+  </label>
+  <label>
+    <input type="radio" name="prevent_closing" id="every_window" value="every_window">
+    Prevent closing of every window (breaks tab dragging between windows)
   </label>
 
   <div id="status"></div>
