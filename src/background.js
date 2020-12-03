@@ -12,7 +12,7 @@ var debug = false;
 
 function isNewTabPage(url) {
 	url = url.trim();
-	return url == newTabUrl || (url.indexOf("/_/chrome/newtab?") !== -1 && url.indexOf("google.") !== -1);
+	return url == newTabUrl || "edge://newtab/" || (url.indexOf("/_/chrome/newtab?") !== -1 && url.indexOf("google.") !== -1);
 }
 
 function handleEvent() {
@@ -33,7 +33,7 @@ function handleEvent() {
 
 					if (window.tabs.length == 2) {
 						// prevent activating first pinned tab
-						if (window.tabs.length == 2 && windowFirstTab.active && windowFirstTab.pinned && isNewTabPage(windowFirstTab.url) && !working) {
+						if (window.tabs.length == 2 && windowFirstTab != undefined && windowFirstTab.active && windowFirstTab.pinned && isNewTabPage(windowFirstTab.url) && !working) {
 							working = true;
 							chrome.tabs.update(window.tabs[1].id, {"active": true}, function(tab) {
 								working = false;
@@ -62,19 +62,26 @@ function handleEvent() {
 					}
 
 					// remove pinned tab if there's enough open tabs
-					if ((every_window || windows.length == 1 || (first_window && first_window_id == window.id)) && window.tabs.length > 2 && windowPinnedTabs.length < window.tabs.length && windowPinnedTabs.length >= 1 && isNewTabPage(windowFirstTab.url) && !working) {
+					if ((every_window || windows.length == 1 || (first_window && first_window_id == window.id)) && window.tabs.length > 2 && windowPinnedTabs.length < window.tabs.length && windowPinnedTabs.length >= 1 && windowFirstTab != undefined && isNewTabPage(windowFirstTab.url) && !working) {
 						working = true;
 						if (debug) console.log("removing pinned tab 1");
 
-						chrome.tabs.remove(windowPinnedTabs[0].id, function(tab) {
+						chrome.tabs.remove(windowPinnedTabs[0].id, function() {
 							working = false;
 							if (chrome.runtime.lastError !== undefined && chrome.runtime.lastError.message.indexOf('user may be dragging a tab') !== -1)
 								setTimeout(function() { handleEvent(); }, 700);
 						});
+						// work around callback not always working in edge (?)
+						setTimeout(function() {
+							if (working) {
+								working = false;
+								handleEvent();
+							}
+						}, 500);
 					}
 
 					// unpin single pinned tab if there's another window
-					if (!every_window && windows.length > 1 && !(first_window && first_window_id == window.id) && window.tabs.length == 1 && windowPinnedTabs.length == 1 && isNewTabPage(windowFirstTab.url) && !working) {
+					if (!every_window && windows.length > 1 && !(first_window && first_window_id == window.id) && window.tabs.length == 1 && windowPinnedTabs.length == 1 && windowFirstTab != undefined && isNewTabPage(windowFirstTab.url) && !working) {
 						working = true;
 						if (debug) console.log("unpin pinned tab");
 						chrome.tabs.update(windowPinnedTabs[0].id, {"pinned": false}, function(tab) {
@@ -83,7 +90,7 @@ function handleEvent() {
 					}
 
 					// remove pinned tab if 1st window has at least one regular page and new window is openning (ctrl+n)
-					if (!every_window && windows.length > 1 && !(first_window && first_window_id == window.id) && window.tabs.length == 2 && windowPinnedTabs.length == 1 && isNewTabPage(windowFirstTab.url) && !working) {
+					if (!every_window && windows.length > 1 && !(first_window && first_window_id == window.id) && window.tabs.length == 2 && windowPinnedTabs.length == 1 && windowFirstTab != undefined && isNewTabPage(windowFirstTab.url) && !working) {
 						working = true;
 						if (debug) console.log("removing pinned tab 2");
 						chrome.tabs.remove(windowPinnedTabs[0].id, function(tab) {
