@@ -15,6 +15,11 @@ function isNewTabPage(url) {
 	return url == newTabUrl || (url.indexOf("/_/chrome/newtab?") !== -1 && url.indexOf("google.") !== -1);
 }
 
+function retryOnFail(timeout) {
+	if (chrome.runtime.lastError !== undefined && chrome.runtime.lastError.message.indexOf('user may be dragging a tab') !== -1)
+		setTimeout(function() { handleEvent(); }, timeout);
+}
+
 function handleEvent() {
 	if (debug) console.log("handleEvent");
 
@@ -37,6 +42,7 @@ function handleEvent() {
 							working = true;
 							chrome.tabs.update(window.tabs[1].id, {"active": true}, function(tab) {
 								working = false;
+								retryOnFail(100);
 							});
 						}
 					}
@@ -68,8 +74,7 @@ function handleEvent() {
 
 						chrome.tabs.remove(windowPinnedTabs[0].id, function(tab) {
 							working = false;
-							if (chrome.runtime.lastError !== undefined && chrome.runtime.lastError.message.indexOf('user may be dragging a tab') !== -1)
-								setTimeout(function() { handleEvent(); }, 700);
+							retryOnFail(700);
 						});
 					}
 
@@ -79,6 +84,7 @@ function handleEvent() {
 						if (debug) console.log("unpin pinned tab");
 						chrome.tabs.update(windowPinnedTabs[0].id, {"pinned": false}, function(tab) {
 							working = false;
+							retryOnFail(200);
 						});
 					}
 
